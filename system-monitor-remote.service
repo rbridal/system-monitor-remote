@@ -1,0 +1,17 @@
+[Unit]
+Description=System Monitor Remote
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=dash
+Group=dash
+WorkingDirectory=/opt/system-monitor-remote
+ExecStart=/opt/system-monitor-remote/venv/bin/python /opt/system-monitor-remote/agent.py /opt/system-monitor-remote/config.yaml
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

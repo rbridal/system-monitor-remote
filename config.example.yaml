@@ -1,0 +1,9 @@
+device_id: shop-dash
+device_name: Shop Dash
+interval_seconds: 15
+mqtt:
+  host: 172.31.0.20
+  port: 1883
+  username: dino-player
+  password: CHANGE_ME
+  topic_prefix: system-monitor/shop-dash
