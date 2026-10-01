@@ -1,6 +1,5 @@
 #!/bin/bash
-# Install from the checkout that contains this script. dash cannot clone private repos;
-# these repos are public, but copying the checkout still avoids a second auth step.
+# Install from the checkout that contains this script.
 set -euo pipefail
 SRC="$(cd "$(dirname "$0")/.." && pwd)"
 DEST=/opt/system-monitor-remote
@@ -25,7 +24,7 @@ if [[ ! -f "$DEST/config.yaml" ]]; then
     home-*) HOST=172.31.0.30 ;;
     *) HOST=172.31.0.20 ;;
   esac
-  NAME=$(echo "$DEVICE_ID" | sed -e 's/-/ /g' -e 's/\b\(.\)/\u\1/g')
+  NAME=$(echo "$DEVICE_ID" | tr '-' ' ' | awk '{for (i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) substr($i,2)} 1')
   sudo -u dash tee "$DEST/config.yaml" >/dev/null <<EOF
 device_id: ${DEVICE_ID}
 device_name: ${NAME}
@@ -39,7 +38,7 @@ mqtt:
 EOF
   sudo chmod 600 "$DEST/config.yaml"
   if [[ -f /opt/ups-hat-e-remote/config.yaml ]]; then
-    python3 - <<'PY'
+    sudo -u dash "$DEST/venv/bin/python" - <<'PY'
 from pathlib import Path
 import yaml
 src = yaml.safe_load(Path("/opt/ups-hat-e-remote/config.yaml").read_text()) or {}
