@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import json
 import socket
-import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -11,6 +10,8 @@ from pathlib import Path
 import psutil
 import yaml
 from paho.mqtt.client import CallbackAPIVersion, Client
+
+SIZES_GB = (1, 2, 4, 8, 16, 32)
 
 
 def _load(path: Path) -> dict:
@@ -60,6 +61,27 @@ def _fans() -> dict[str, int]:
     return out
 
 
+def _memory_gb() -> int:
+    gb = psutil.virtual_memory().total / 1024 / 1024 / 1024
+    return min(SIZES_GB, key=lambda size: abs(size - gb))
+
+
+def _hardware(cfg: dict) -> str:
+    override = str(cfg.get("hardware") or "").strip()
+    if override:
+        return override
+    model = ""
+    path = Path("/proc/device-tree/model")
+    if path.exists():
+        model = path.read_bytes().split(b"\0", 1)[0].decode("utf-8", "replace").strip()
+    if model.startswith("Raspberry Pi "):
+        parts = model.split()
+        family = " ".join(parts[:3])
+    else:
+        family = model or "unknown"
+    return f"{family} {_memory_gb()}GB"
+
+
 def snapshot(cfg: dict) -> dict:
     disk = psutil.disk_usage("/")
     mem = psutil.virtual_memory()
@@ -69,6 +91,7 @@ def snapshot(cfg: dict) -> dict:
         "device_id": cfg["device_id"],
         "device_name": cfg.get("device_name") or cfg["device_id"],
         "hostname": socket.gethostname(),
+        "hardware": _hardware(cfg),
         "ts": datetime.now(timezone.utc).isoformat(),
         "disk_usage": round(disk.percent, 1),
         "memory_usage": round(mem.percent, 1),
